@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniRank — Recommendation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+    <style>
+        /* ── Design tokens (same as dashboard) ── */
+        :root {
+            --pink: #ff4ecd;
+            --cyan: #00f5ff;
+            --yellow: #ffe135;
+            --dark: #080810;
+            --card-bg: rgba(255,255,255,0.04);
+            --border: rgba(255,255,255,0.08);
+            --text: #f0eeff;
+            --muted: rgba(240,238,255,0.45);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Background ── */
+        .bg-wrap {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+        }
+
+        /* 👇 ADD YOUR BACKGROUND IMAGE PATH HERE */
+        .bg-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.18;
+        }
+
+        .bg-wrap::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 50% at 80% 10%, rgba(255,78,205,0.18) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 60% at 10% 90%, rgba(0,245,255,0.14) 0%, transparent 70%),
+                linear-gradient(to bottom, rgba(8,8,16,0.5) 0%, rgba(8,8,16,0.85) 100%);
+        }
+        #bg-toggle {
+            margin-top: 0.6rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 38px;
+            height: 38px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s, background 0.2s;
+            margin-left: auto;
+        }
+
+        #bg-toggle:hover {
+            border-color: rgba(255,78,205,0.5);
+            background: rgba(255,78,205,0.08);
+        }
+
+        /* Image-only mode — kills the dark overlay and gradients */
+        .bg-wrap.image-only img {
+            opacity: 0.30;
+        }
+
+        .bg-wrap.image-only::after {
+            display: none;
+        }
+
+        /* ── Layout ── */
+        .page {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem 5rem;
+        }
+
+        /* ── Header ── */
+        header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            padding: 3rem 0 2.5rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 3rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .logo-area h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(2.4rem, 5vw, 4rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .logo-area h1 span.pink { color: var(--pink); }
+        .logo-area h1 span.cyan { color: var(--cyan); }
+
+        .logo-area p {
+            margin-top: 0.5rem;
+            color: var(--muted);
+            font-size: 0.95rem;
+            font-weight: 300;
+            letter-spacing: 0.04em;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.6rem 1.1rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .back-btn:hover {
+            color: var(--cyan);
+            border-color: rgba(0,245,255,0.4);
+        }
+
+        /* ── Loading ── */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.2rem;
+            padding: 8rem 0;
+        }
+
+        .spinner {
+            width: 42px;
+            height: 42px;
+            border: 2px solid var(--border);
+            border-top-color: var(--pink);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-state p {
+            color: var(--muted);
+            font-size: 0.9rem;
+            letter-spacing: 0.06em;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ════════════════════════════════
+           HERO — Selected Anime
+        ════════════════════════════════ */
+        .hero {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2.5rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+            margin-bottom: 3.5rem;
+            animation: fadeUp 0.5s ease both;
+        }
+
+        .hero-poster {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-poster img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            min-height: 380px;
+        }
+
+        .hero-poster-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, transparent 70%, rgba(8,8,16,0.9) 100%);
+        }
+
+        .hero-body {
+            padding: 2.2rem 2.2rem 2.2rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1.1rem;
+            justify-content: center;
+        }
+
+        .hero-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--pink);
+        }
+
+        .hero-title {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(1.6rem, 3vw, 2.4rem);
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+
+        .tag {
+            font-size: 0.68rem;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            padding: 3px 9px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .tag.pink   { border-color: rgba(255,78,205,0.5); color: var(--pink); }
+        .tag.cyan   { border-color: rgba(0,245,255,0.5);  color: var(--cyan); }
+        .tag.yellow { border-color: rgba(255,225,53,0.5); color: var(--yellow); }
+
+        .hero-genres {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .genre-chip {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: rgba(0,245,255,0.07);
+            border: 1px solid rgba(0,245,255,0.2);
+            color: var(--cyan);
+            letter-spacing: 0.03em;
+        }
+
+        .hero-synopsis {
+            font-size: 0.88rem;
+            color: var(--muted);
+            line-height: 1.75;
+            max-width: 680px;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            padding-top: 0.6rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stat-value {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .stat-value.yellow { color: var(--yellow); }
+
+        .stat-label {
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        /* ════════════════════════════════
+           Section heading
+        ════════════════════════════════ */
+        .section-heading {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-heading h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
+        .section-heading span {
+            font-size: 0.75rem;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+        }
+
+        /* ════════════════════════════════
+           Recommendation grid (same cards as dashboard)
+        ════════════════════════════════ */
+        .rec-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(12px);
+            cursor: pointer;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeUp 0.5s ease both;
+        }
+
+        .card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(255,78,205,0.4);
+            box-shadow: 0 20px 50px rgba(255,78,205,0.12);
+        }
+
+        .card:nth-child(1) { animation-delay: 0.04s; }
+        .card:nth-child(2) { animation-delay: 0.08s; }
+        .card:nth-child(3) { animation-delay: 0.12s; }
+        .card:nth-child(4) { animation-delay: 0.16s; }
+        .card:nth-child(5) { animation-delay: 0.20s; }
+        .card:nth-child(6) { animation-delay: 0.24s; }
+        .card:nth-child(7) { animation-delay: 0.28s; }
+        .card:nth-child(8) { animation-delay: 0.32s; }
+
+        .card-poster {
+            position: relative;
+            aspect-ratio: 3/4;
+            overflow: hidden;
+            background: rgba(255,255,255,0.03);
+        }
+
+        .card-poster img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .card:hover .card-poster img { transform: scale(1.06); }
+
+        .card-poster-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(8,8,16,0.92) 0%, transparent 50%);
+        }
+
+        .card-score {
+            position: absolute;
+            bottom: 14px;
+            right: 14px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-family: 'Syne', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .card-score::before {
+            content: '★';
+            color: var(--yellow);
+            font-size: 0.85rem;
+        }
+
+        .card-body {
+            padding: 1.1rem 1.2rem 1.4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        .card-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 0.98rem;
+            font-weight: 700;
+            line-height: 1.3;
+            color: var(--text);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+
+        .card-synopsis {
+            font-size: 0.78rem;
+            color: var(--muted);
+            line-height: 1.6;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 0.6rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.72rem;
+            color: var(--muted);
+        }
+
+        .card-footer span { display: flex; align-items: center; gap: 4px; }
+
+        /* ── Error ── */
+        .error-state {
+            text-align: center;
+            padding: 5rem 0;
+            color: var(--muted);
+        }
+        .error-state strong { color: var(--pink); font-family: 'Syne', sans-serif; font-size: 1.2rem; }
+
+        /* ── Search ── */
+        .search-wrap {
+            position: relative;
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .search-inner {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.6rem 1rem;
+            transition: border-color 0.2s;
+            backdrop-filter: blur(12px);
+        }
+
+        .search-wrap:focus-within .search-inner {
+            border-color: rgba(255,78,205,0.5);
+        }
+
+        .search-icon { color: var(--muted); font-size: 0.95rem; flex-shrink: 0; }
+
+        #search-input {
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            width: 100%;
+        }
+
+        #search-input::placeholder { color: var(--muted); }
+
+        #suggestions {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background: rgba(12,12,22,0.97);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: background 0.15s;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover { background: rgba(255,78,205,0.08); }
+
+        .suggestion-thumb {
+            width: 36px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 6px;
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .suggestion-info { flex: 1; min-width: 0; }
+
+        .suggestion-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text);
+        }
+
+        .suggestion-meta { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+        .suggestion-arrow { color: var(--muted); font-size: 0.75rem; flex-shrink: 0; }
+        .suggestion-item:hover .suggestion-arrow { color: var(--pink); }
+        .no-results { padding: 1.2rem; text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+        /* ════════════════════════════════
+           Responsive
+        ════════════════════════════════ */
+        @media (max-width: 900px) {
+            .hero {
+                grid-template-columns: 200px 1fr;
+                gap: 1.8rem;
+            }
+
+            .hero-poster img { min-height: 280px; }
+            .hero-body { padding: 1.6rem 1.6rem 1.6rem 0; }
+        }
+
+        @media (max-width: 768px) {
+            .page { padding: 0 1.2rem 4rem; }
+
+            header { padding: 2rem 0 1.8rem; margin-bottom: 2rem; }
+
+            /* Hero stacks vertically on tablet */
+            .hero {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-poster img {
+                min-height: 280px;
+                max-height: 340px;
+                width: 100%;
+            }
+
+            .hero-poster-overlay {
+                background: linear-gradient(to top, rgba(8,8,16,0.9) 0%, transparent 60%);
+            }
+
+            .hero-body { padding: 1.4rem 1.4rem 1.8rem; }
+
+            .rec-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+
+            .card-footer {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .page { padding: 0 1rem 3rem; }
+
+            header {
+                padding: 1.5rem 0 1.4rem;
+                margin-bottom: 1.5rem;
+                align-items: center;
+            }
+
+            .logo-area h1 { font-size: 2rem; }
+            .logo-area p  { font-size: 0.78rem; }
+
+            .hero { border-radius: 14px; margin-bottom: 2.5rem; }
+
+            .hero-stats { gap: 1.2rem; }
+            .stat-value { font-size: 1.1rem; }
+
+            .hero-synopsis { font-size: 0.82rem; }
+
+            /* Rec grid: single column horizontal cards on mobile */
+            .rec-grid {
+                grid-template-columns: 1fr;
+                gap: 0.9rem;
+            }
+
+            .card {
+                flex-direction: row;
+                border-radius: 14px;
+                max-height: 160px;
+            }
+
+            .card-poster {
+                width: 110px;
+                min-width: 110px;
+                aspect-ratio: unset;
+                height: 100%;
+                border-radius: 0;
+            }
+
+            .card-synopsis { display: none; }
+
+            .card-body {
+                padding: 0.85rem 1rem;
+                gap: 0.5rem;
+                justify-content: center;
+                overflow: hidden;
+            }
+
+            .card-title {
+                font-size: 0.88rem;
+                -webkit-line-clamp: 2;
+            }
+
+            .card-footer {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 6px 10px;
+                font-size: 0.65rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ── Background ── -->
+    <div class="bg-wrap">
+        <!-- 👇 ADD YOUR BACKGROUND IMAGE PATH HERE (same as index.html) -->
+        <img src="imgs/Shen Long.jpg" alt="background">
+    </div>
+
+    <div class="page">
+
+        <!-- ── Header ── -->
+        <header>
+            <div class="logo-area">
+                <h1 onclick="window.location.href='index.html'">
+                    <span class="pink">Ani</span><span class="cyan">Rank</span>
+                </h1>
+            </div>
+
+            <!-- ── Search bar ── -->
+            <div class="search-wrap">
+                <div class="search-inner">
+                    <span class="search-icon">🔍</span>
+                    <input
+                        type="text"
+                        id="search-input"
+                        placeholder="Search any anime..."
+                        autocomplete="off"
+                    >
+                </div>
+                <div id="suggestions"></div>
+            </div>
+
+            <a class="back-btn" href="index.html">← Back to Top 20</a>
+            <button id="bg-toggle" onclick="toggleBG()" title="Toggle background">
+                <span id="toggle-icon">🌙</span>
+            </button>
+        </header>
+
+        <!-- ── Content (injected by JS) ── -->
+        <div id="page-content">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p>Loading anime details...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function initBG() {
+            const bgWrap = document.querySelector('.bg-wrap')
+            const icon   = document.getElementById('toggle-icon')
+            const isImageMode = localStorage.getItem('bgMode') === 'image'
+            bgWrap.classList.toggle('image-only', isImageMode)
+            icon.textContent = isImageMode ? '☀️' : '🌙'
+        }
+
+        function toggleBG() {
+            const bgWrap = document.querySelector('.bg-wrap')
+            const icon   = document.getElementById('toggle-icon')
+            const isImageMode = bgWrap.classList.toggle('image-only')
+            icon.textContent = isImageMode ? '☀️' : '🌙'
+            localStorage.setItem('bgMode', isImageMode ? 'image' : 'dark')
+        }
+
+        initBG()
+        const BASE_URL = 'http://localhost:8000'
+
+        // ── Helpers ──────────────────────────────────
+        function parseGenres(raw) {
+            if (!raw) return []
+            try {
+                if (raw.startsWith('[')) return JSON.parse(raw.replace(/'/g, '"'))
+                return raw.split(',').map(g => g.trim()).filter(Boolean)
+            } catch { return raw.split(',').map(g => g.trim()) }
+        }
+
+        function fmtScore(v)   { return v   ? Number(v).toFixed(2)              : 'N/A' }
+        function fmtNum(v)     { return v   ? Number(v).toLocaleString()         : '—'  }
+        function fmtEps(v)     { return v   ? `${v} eps`                         : '? eps' }
+
+        // ── Fetch & navigate ─────────────────────────
+        async function goToAnime(id) {
+            try {
+                const res = await fetch(`${BASE_URL}/check_status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mal_id: id })
+                })
+                const result = await res.json()
+                if (res.ok) {
+                    sessionStorage.setItem('mal_id', id)
+                    // Clear search state
+                    document.getElementById('search-input').value = ''
+                    document.getElementById('suggestions').style.display = 'none'
+                    loadPage(id)
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                } else {
+                    alert(result.detail || 'Anime not found.')
+                }
+            } catch {
+                alert('Could not connect to server.')
+            }
+        }
+
+        // ── Build hero HTML ───────────────────────────
+        function buildHero(anime) {
+            const genres   = parseGenres(anime.genres)
+            const score    = fmtScore(anime.score)
+            const members  = fmtNum(anime.members)
+            const favorites= fmtNum(anime.favorites)
+            const eps      = fmtEps(anime.episodes)
+            const synopsis = anime.synopsis || 'No synopsis available.'
+
+            return `
+            <section class="hero">
+                <div class="hero-poster">
+                    <img src="${anime.img_src || ''}" alt="${anime.title_english}"
+                         onerror="this.style.opacity='0'">
+                    <div class="hero-poster-overlay"></div>
+                </div>
+                <div class="hero-body">
+                    <div class="hero-label">Now viewing</div>
+                    <h2 class="hero-title">${anime.title_english || 'Unknown Title'}</h2>
+
+                    <div class="hero-meta">
+                        ${anime.type   ? `<span class="tag pink">${anime.type}</span>`    : ''}
+                        ${anime.source ? `<span class="tag">${anime.source}</span>`       : ''}
+                        ${anime.rating ? `<span class="tag yellow">${anime.rating}</span>`: ''}
+                        ${anime.status ? `<span class="tag cyan">${anime.status}</span>`  : ''}
+                    </div>
+
+                    ${genres.length ? `
+                    <div class="hero-genres">
+                        ${genres.map(g => `<span class="genre-chip">${g}</span>`).join('')}
+                    </div>` : ''}
+
+                    <p class="hero-synopsis">${synopsis}</p>
+
+                    <div class="hero-stats">
+                        <div class="stat-item">
+                            <span class="stat-value yellow">${score}</span>
+                            <span class="stat-label">Score</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">${eps}</span>
+                            <span class="stat-label">Episodes</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">${members}</span>
+                            <span class="stat-label">Members</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">${favorites}</span>
+                            <span class="stat-label">Favorites</span>
+                        </div>
+                        ${anime.studios ? `
+                        <div class="stat-item">
+                            <span class="stat-value" style="font-size:1rem">${anime.studios}</span>
+                            <span class="stat-label">Studio</span>
+                        </div>` : ''}
+                    </div>
+                </div>
+            </section>`
+        }
+
+        // ── Build recommendation card HTML ────────────
+        function buildCard(anime) {
+            const score   = fmtScore(anime.score)
+            const eps     = fmtEps(anime.episodes)
+            const members = fmtNum(anime.members)
+            const synopsis= anime.synopsis || 'No synopsis available.'
+
+            return `
+            <div class="card" onclick="goToAnime(${anime.mal_id})">
+                <div class="card-poster">
+                    <img src="${anime.img_src || ''}" alt="${anime.title_english}"
+                         loading="lazy" onerror="this.style.opacity='0'">
+                    <div class="card-poster-overlay"></div>
+                    <div class="card-score">${score}</div>
+                </div>
+                <div class="card-body">
+                    <div class="card-title">${anime.title_english || 'Unknown Title'}</div>
+                    <div class="card-meta">
+                        ${anime.type   ? `<span class="tag pink">${anime.type}</span>`    : ''}
+                        ${anime.source ? `<span class="tag">${anime.source}</span>`       : ''}
+                        ${anime.rating ? `<span class="tag yellow">${anime.rating}</span>`: ''}
+                        ${anime.status ? `<span class="tag cyan">${anime.status}</span>`  : ''}
+                    </div>
+                    <p class="card-synopsis">${synopsis}</p>
+                    <div class="card-footer">
+                        <span>👥 ${members}</span>
+                        <span>📺 ${eps}</span>
+                    </div>
+                </div>
+            </div>`
+        }
+
+        // ── Main load ─────────────────────────────────
+        async function loadPage(id) {
+            const container = document.getElementById('page-content')
+
+            // Show spinner while fetching
+            container.innerHTML = `
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading anime details...</p>
+                </div>`
+
+            try {
+                const res = await fetch(`${BASE_URL}/get_recommendation`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mal_id: id })
+                })
+                const result = await res.json()
+
+                if (!res.ok) {
+                    container.innerHTML = `
+                        <div class="error-state">
+                            <strong>Oops!</strong>
+                            <p style="margin-top:0.5rem">${result.detail || 'Failed to load.'}</p>
+                        </div>`
+                    return
+                }
+
+                const heroHTML = buildHero(result.matched_data)
+                const recCards = result.similar_anime_data.map(buildCard).join('')
+
+                container.innerHTML = `
+                    ${heroHTML}
+                    <div class="section-heading">
+                        <h2>You might also like</h2>
+                    </div>
+                    <div class="rec-grid">${recCards}</div>`
+
+            } catch {
+                container.innerHTML = `
+                    <div class="error-state">
+                        <strong>Connection error</strong>
+                        <p style="margin-top:0.5rem">Could not connect to server. Is the backend running?</p>
+                    </div>`
+            }
+        }
+
+        // ── Entry point ───────────────────────────────
+        const anime_id = parseInt(sessionStorage.getItem('mal_id'))
+        if (!anime_id) {
+            document.getElementById('page-content').innerHTML = `
+                <div class="error-state">
+                    <strong>No anime selected</strong>
+                    <p style="margin-top:0.5rem">
+                        Go back to the <a href="index.html" style="color:var(--cyan)">dashboard</a> and click an anime.
+                    </p>
+                </div>`
+        } else {
+            loadPage(anime_id)
+        }
+
+        // ── Search ───────────────────────────────────
+        const searchInput = document.getElementById('search-input')
+        const suggestions = document.getElementById('suggestions')
+        let debounceTimer = null
+
+        searchInput.addEventListener('input', () => {
+            const query = searchInput.value.trim()
+            clearTimeout(debounceTimer)
+            if (query.length === 0) { suggestions.style.display = 'none'; return }
+            debounceTimer = setTimeout(() => fetchSuggestions(query), 300)
+        })
+
+        async function fetchSuggestions(query) {
+            try {
+                const res    = await fetch(`${BASE_URL}/search?query=${encodeURIComponent(query)}`)
+                const result = await res.json()
+
+                if (result.length === 0) {
+                    suggestions.innerHTML = `<div class="no-results">No anime found for "${query}"</div>`
+                } else {
+                    suggestions.innerHTML = result.map(anime => `
+                        <div class="suggestion-item" onclick="goToAnime(${anime.mal_id})">
+                            <img class="suggestion-thumb"
+                                 src="${anime.img_src || ''}"
+                                 alt="${anime.title_english}"
+                                 onerror="this.style.opacity='0'">
+                            <div class="suggestion-info">
+                                <div class="suggestion-title">${anime.title_english || 'Unknown'}</div>
+                                <div class="suggestion-meta">
+                                    ${anime.type || ''}${anime.type && anime.score ? ' · ' : ''}${anime.score ? '★ ' + Number(anime.score).toFixed(2) : ''}
+                                </div>
+                            </div>
+                            <span class="suggestion-arrow">→</span>
+                        </div>`
+                    ).join('')
+                }
+                suggestions.style.display = 'block'
+            } catch (err) {
+                console.error('Search failed', err)
+            }
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-wrap')) suggestions.style.display = 'none'
+        })
+    </script>
+</body>
+</html>
