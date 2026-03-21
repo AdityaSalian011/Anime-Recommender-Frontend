@@ -1,0 +1,1 @@
+const BASE_URL = 'https://adityasalian-anime-recommendation-backend.hf.space'
