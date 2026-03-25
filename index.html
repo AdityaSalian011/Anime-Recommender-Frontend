@@ -34,13 +34,11 @@
             z-index: 0;
         }
 
-        /* 👇 REPLACE src WITH YOUR LOCAL IMAGE PATH */
         .bg-wrap img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             opacity: 0.18;
-            /* e.g. src="./your-bg.jpg" */
         }
 
         .bg-wrap::after {
@@ -53,35 +51,9 @@
                 linear-gradient(to bottom, rgba(8,8,16,0.5) 0%, rgba(8,8,16,0.85) 100%);
         }
 
-        #bg-toggle {
-            margin-top: 0.6rem;
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 50%;
-            width: 38px;
-            height: 38px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: border-color 0.2s, background 0.2s;
-            margin-left: auto;
-        }
-
-        #bg-toggle:hover {
-            border-color: rgba(255,78,205,0.5);
-            background: rgba(255,78,205,0.08);
-        }
-
-        /* Image-only mode — kills the dark overlay and gradients */
-        .bg-wrap.image-only img {
-            opacity: 0.30;
-        }
-
-        .bg-wrap.image-only::after {
-            display: none;
-        }
+        /* Image-only mode */
+        .bg-wrap.image-only img  { opacity: 0.30; }
+        .bg-wrap.image-only::after { display: none; }
 
         /* ── Layout ── */
         .page {
@@ -95,11 +67,11 @@
         /* ── Header ── */
         header {
             display: flex;
-            align-items: flex-end;
+            align-items: center;
             justify-content: space-between;
             padding: 3rem 0 2.5rem;
             border-bottom: 1px solid var(--border);
-            margin-bottom: 3rem;
+            margin-bottom: 1.5rem;
             gap: 1rem;
             flex-wrap: wrap;
         }
@@ -123,6 +95,13 @@
             letter-spacing: 0.04em;
         }
 
+        /* ── Header right group (stat + toggle) ── */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
         .header-stat {
             text-align: right;
         }
@@ -140,6 +119,65 @@
             font-size: 0.78rem;
             letter-spacing: 0.1em;
             text-transform: uppercase;
+        }
+
+        /* ── Toggle button — standalone, always visible ── */
+        #bg-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            font-size: 1.15rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s, background 0.2s;
+            flex-shrink: 0;
+        }
+
+        #bg-toggle:hover {
+            border-color: rgba(255,78,205,0.5);
+            background: rgba(255,78,205,0.08);
+        }
+
+        /* ── Genre bar ── */
+        .genre-bar {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 0.75rem;
+            margin-bottom: 2rem;
+            scrollbar-width: none;
+        }
+
+        .genre-bar::-webkit-scrollbar { display: none; }
+
+        .genre-pill {
+            flex-shrink: 0;
+            font-size: 0.72rem;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            padding: 5px 14px;
+            border-radius: 20px;
+            border: 1px solid;
+            cursor: pointer;
+            background: transparent;
+            white-space: nowrap;
+            transition: background 0.2s, color 0.2s, transform 0.15s;
+            letter-spacing: 0.03em;
+        }
+
+        .genre-pill:hover {
+            transform: translateY(-1px);
+            opacity: 0.85;
+        }
+
+        .genre-pill.active {
+            /* background set inline via JS using the genre color */
+            color: #080810 !important;
         }
 
         /* ── Grid ── */
@@ -200,20 +238,18 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* staggered delays */
-        .card:nth-child(1)  { animation-delay: 0.03s; }
-        .card:nth-child(2)  { animation-delay: 0.06s; }
-        .card:nth-child(3)  { animation-delay: 0.09s; }
-        .card:nth-child(4)  { animation-delay: 0.12s; }
-        .card:nth-child(5)  { animation-delay: 0.15s; }
-        .card:nth-child(6)  { animation-delay: 0.18s; }
-        .card:nth-child(7)  { animation-delay: 0.21s; }
-        .card:nth-child(8)  { animation-delay: 0.24s; }
-        .card:nth-child(9)  { animation-delay: 0.27s; }
-        .card:nth-child(10) { animation-delay: 0.30s; }
+        .card:nth-child(1)    { animation-delay: 0.03s; }
+        .card:nth-child(2)    { animation-delay: 0.06s; }
+        .card:nth-child(3)    { animation-delay: 0.09s; }
+        .card:nth-child(4)    { animation-delay: 0.12s; }
+        .card:nth-child(5)    { animation-delay: 0.15s; }
+        .card:nth-child(6)    { animation-delay: 0.18s; }
+        .card:nth-child(7)    { animation-delay: 0.21s; }
+        .card:nth-child(8)    { animation-delay: 0.24s; }
+        .card:nth-child(9)    { animation-delay: 0.27s; }
+        .card:nth-child(10)   { animation-delay: 0.30s; }
         .card:nth-child(n+11) { animation-delay: 0.33s; }
 
-        /* Poster */
         .card-poster {
             position: relative;
             aspect-ratio: 3/4;
@@ -228,9 +264,7 @@
             transition: transform 0.5s ease;
         }
 
-        .card:hover .card-poster img {
-            transform: scale(1.06);
-        }
+        .card:hover .card-poster img { transform: scale(1.06); }
 
         .card-poster-overlay {
             position: absolute;
@@ -271,7 +305,6 @@
             font-size: 0.85rem;
         }
 
-        /* Body */
         .card-body {
             padding: 1.1rem 1.2rem 1.4rem;
             display: flex;
@@ -292,11 +325,7 @@
             overflow: hidden;
         }
 
-        .card-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
+        .card-meta { display: flex; flex-wrap: wrap; gap: 6px; }
 
         .tag {
             font-size: 0.68rem;
@@ -309,9 +338,9 @@
             white-space: nowrap;
         }
 
-        .tag.pink  { border-color: rgba(255,78,205,0.5); color: var(--pink); }
-        .tag.cyan  { border-color: rgba(0,245,255,0.5);  color: var(--cyan); }
-        .tag.yellow{ border-color: rgba(255,225,53,0.5); color: var(--yellow); }
+        .tag.pink   { border-color: rgba(255,78,205,0.5); color: var(--pink); }
+        .tag.cyan   { border-color: rgba(0,245,255,0.5);  color: var(--cyan); }
+        .tag.yellow { border-color: rgba(255,225,53,0.5); color: var(--yellow); }
 
         .card-synopsis {
             font-size: 0.78rem;
@@ -335,12 +364,7 @@
 
         .card-footer span { display: flex; align-items: center; gap: 4px; }
 
-        /* ── Genres ── */
-        .genres-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-        }
+        .genres-row { display: flex; flex-wrap: wrap; gap: 5px; }
 
         .genre-chip {
             font-size: 0.65rem;
@@ -359,6 +383,7 @@
             padding: 5rem 0;
             color: var(--muted);
         }
+
         .error-state strong { color: var(--pink); font-family: 'Syne', sans-serif; font-size: 1.2rem; }
 
         /* ── Search ── */
@@ -380,9 +405,7 @@
             backdrop-filter: blur(12px);
         }
 
-        .search-wrap:focus-within .search-inner {
-            border-color: rgba(255,78,205,0.5);
-        }
+        .search-wrap:focus-within .search-inner { border-color: rgba(255,78,205,0.5); }
 
         .search-icon { color: var(--muted); font-size: 0.95rem; flex-shrink: 0; }
 
@@ -447,70 +470,42 @@
             color: var(--text);
         }
 
-        .suggestion-meta { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+        .suggestion-meta  { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
         .suggestion-arrow { color: var(--muted); font-size: 0.75rem; flex-shrink: 0; }
         .suggestion-item:hover .suggestion-arrow { color: var(--pink); }
         .no-results { padding: 1.2rem; text-align: center; color: var(--muted); font-size: 0.85rem; }
 
-        /* ── Tablet: 2 columns ── */
+        /* ── Tablet ── */
         @media (max-width: 768px) {
-            .page {
-                padding: 0 1.2rem 4rem;
-            }
+            .page { padding: 0 1.2rem 4rem; }
 
-            header {
-                padding: 2rem 0 1.8rem;
-                margin-bottom: 2rem;
-            }
+            header { padding: 2rem 0 1.8rem; margin-bottom: 1.2rem; }
 
-            #anime-data {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 1rem;
-            }
+            #anime-data { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
 
-            .card-footer {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 4px;
-            }
-
-            .card-synopsis {
-                -webkit-line-clamp: 2;
-            }
-
+            .card-footer { flex-direction: column; align-items: flex-start; gap: 4px; }
+            .card-synopsis { -webkit-line-clamp: 2; }
             .search-wrap { max-width: 100%; }
         }
 
-        /* ── Mobile: horizontal card layout ── */
+        /* ── Mobile ── */
         @media (max-width: 480px) {
-            .page {
-                padding: 0 1rem 3rem;
-            }
+            .page { padding: 0 1rem 3rem; }
 
             header {
                 padding: 1.5rem 0 1.4rem;
-                margin-bottom: 1.5rem;
-                flex-direction: row;
+                margin-bottom: 1rem;
                 align-items: center;
             }
 
-            .logo-area h1 {
-                font-size: 2rem;
-            }
+            .logo-area h1  { font-size: 2rem; }
+            .logo-area p   { font-size: 0.78rem; }
+            .header-stat span { font-size: 1.6rem; }
 
-            .logo-area p {
-                font-size: 0.78rem;
-            }
+            /* Toggle stays 44px — good tap target on mobile */
+            #bg-toggle { width: 44px; height: 44px; font-size: 1.1rem; }
 
-            .header-stat span {
-                font-size: 1.6rem;
-            }
-
-            /* Switch to single column with horizontal card layout */
-            #anime-data {
-                grid-template-columns: 1fr;
-                gap: 0.9rem;
-            }
+            #anime-data { grid-template-columns: 1fr; gap: 0.9rem; }
 
             .card {
                 flex-direction: row;
@@ -518,7 +513,6 @@
                 max-height: 160px;
             }
 
-            /* Poster becomes a fixed-width left column */
             .card-poster {
                 width: 110px;
                 min-width: 110px;
@@ -527,11 +521,7 @@
                 border-radius: 0;
             }
 
-            .card:hover .card-poster img {
-                transform: scale(1.04);
-            }
-
-            /* Hide heavy elements to keep cards compact */
+            .card:hover .card-poster img { transform: scale(1.04); }
             .card-synopsis { display: none; }
             .genres-row    { display: none; }
 
@@ -542,21 +532,10 @@
                 overflow: hidden;
             }
 
-            .card-title {
-                font-size: 0.88rem;
-                -webkit-line-clamp: 2;
-            }
+            .card-title { font-size: 0.88rem; -webkit-line-clamp: 2; }
+            .card-meta  { gap: 4px; }
+            .tag        { font-size: 0.6rem; padding: 2px 7px; }
 
-            .card-meta {
-                gap: 4px;
-            }
-
-            .tag {
-                font-size: 0.6rem;
-                padding: 2px 7px;
-            }
-
-            /* Footer: wrap into two items per row */
             .card-footer {
                 flex-direction: row;
                 flex-wrap: wrap;
@@ -570,14 +549,15 @@
 
     <!-- ── Background ── -->
     <div class="bg-wrap">
-        <!-- 👇 ADD YOUR BACKGROUND IMAGE PATH HERE -->
         <img src="imgs/Shen Long.jpg" alt="background" id="bg-img">
     </div>
 
     <div class="page">
+
         <header>
             <div class="logo-area">
                 <h1><span class="pink">Ani</span><span class="cyan">Rank</span></h1>
+                <p>Top 20 picks — ranked by score &amp; engagement</p>
             </div>
 
             <!-- ── Search bar ── -->
@@ -594,26 +574,37 @@
                 <div id="suggestions"></div>
             </div>
 
-            <div class="header-stat">
-                <span id="total-count">—</span>
-                <small>Anime Ranked</small>
+            <!-- ── Right group: stat count + toggle ── -->
+            <div class="header-actions">
+                <div class="header-stat">
+                    <span id="total-count">—</span>
+                    <small>Anime Ranked</small>
+                </div>
                 <button id="bg-toggle" onclick="toggleBG()" title="Toggle background">
                     <span id="toggle-icon">🌙</span>
                 </button>
             </div>
-
         </header>
 
+        <!-- ── Genre pill bar ── -->
+        <div id="genre-bar" class="genre-bar">
+            <!-- populated by loadGenres() -->
+        </div>
+
+        <!-- ── Anime grid ── -->
         <div id="anime-data">
             <div class="loading-state">
                 <div class="spinner"></div>
                 <p>Fetching top picks...</p>
             </div>
         </div>
+
     </div>
 
     <script src="config.js"></script>
     <script>
+
+        /* ── Background toggle ─────────────────────── */
         function initBG() {
             const bgWrap = document.querySelector('.bg-wrap')
             const icon   = document.getElementById('toggle-icon')
@@ -632,6 +623,7 @@
 
         initBG()
 
+        /* ── Top 20 loader ─────────────────────────── */
         async function loadAnime() {
             try {
                 const response = await fetch(`${BASE_URL}/`, {
@@ -649,10 +641,80 @@
             }
         }
 
+        /* ── Genre bar ─────────────────────────────── */
+        const activeGenres = new Set()
+
+        async function loadGenres() {
+            try {
+                const res    = await fetch(`${BASE_URL}/get-genres`)
+                const genres = await res.json()
+                const bar    = document.getElementById('genre-bar')
+
+                bar.innerHTML = genres.map(g => `
+                    <button
+                        class="genre-pill"
+                        data-genre="${g.genre}"
+                        data-color="${g.color}"
+                        style="color:${g.color}; border-color:${g.color}"
+                        onclick="toggleGenre(this)"
+                    >${g.genre}</button>
+                `).join('')
+            } catch (err) {
+                console.error('Genre load failed', err)
+            }
+        }
+
+        function toggleGenre(btn) {
+            const genre = btn.dataset.genre
+            const color = btn.dataset.color
+
+            if (activeGenres.has(genre)) {
+                activeGenres.delete(genre)
+                btn.classList.remove('active')
+                btn.style.background = 'transparent'
+                btn.style.color      = color
+            } else {
+                activeGenres.add(genre)
+                btn.classList.add('active')
+                btn.style.background = color
+                btn.style.color      = '#080810'
+            }
+
+            if (activeGenres.size === 0) {
+                loadAnime()              // no genre selected → back to top 20
+            } else {
+                fetchGenreAnime()
+            }
+        }
+
+        async function fetchGenreAnime() {
+            const container = document.getElementById('anime-data')
+            container.innerHTML = `
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Filtering by genre...</p>
+                </div>`
+            try {
+                const res    = await fetch(`${BASE_URL}/genre-anime-data`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ genres: [...activeGenres] })
+                })
+                const result = await res.json()
+                if (res.ok) {
+                    displayAnime(result)
+                } else {
+                    showError(result.detail || 'Failed to fetch genre anime.')
+                }
+            } catch (err) {
+                showError('Could not connect to server.')
+            }
+        }
+
+        /* ── Helpers ───────────────────────────────── */
         function parseGenres(raw) {
             if (!raw) return []
             try {
-                // handle both JSON arrays and comma-separated strings
                 if (raw.startsWith('[')) return JSON.parse(raw.replace(/'/g, '"'))
                 return raw.split(',').map(g => g.trim()).filter(Boolean)
             } catch { return raw.split(',').map(g => g.trim()) }
@@ -662,18 +724,25 @@
             const container = document.getElementById('anime-data')
             document.getElementById('total-count').textContent = anime_data.length
 
+            if (anime_data.length === 0) {
+                container.innerHTML = `
+                    <div class="error-state">
+                        <strong>No results</strong>
+                        <p style="margin-top:0.5rem">No anime found for the selected genres.</p>
+                    </div>`
+                return
+            }
+
             container.innerHTML = anime_data.map((anime, i) => {
-                const genres = parseGenres(anime.genres).slice(0, 3)
-                const score  = anime.score ? Number(anime.score).toFixed(2) : 'N/A'
-                const eps    = anime.episodes ? `${anime.episodes} eps` : '? eps'
-                const members = anime.members
-                    ? Number(anime.members).toLocaleString()
-                    : '—'
-                const rating  = anime.rating || null
-                const studios = anime.studios || '—'
+                const genres  = parseGenres(anime.genres).slice(0, 3)
+                const score   = anime.score   ? Number(anime.score).toFixed(2)      : 'N/A'
+                const eps     = anime.episodes ? `${anime.episodes} eps`             : '? eps'
+                const members = anime.members  ? Number(anime.members).toLocaleString() : '—'
+                const rating  = anime.rating  || null
+                const studios = anime.studios  || '—'
                 const synopsis = anime.synopsis || 'No synopsis available.'
-                const status = anime.status || ''
-                const source = anime.source || ''
+                const status  = anime.status  || ''
+                const source  = anime.source  || ''
 
                 return `
                 <div class="card" onclick="myFunction(${anime.mal_id})">
@@ -684,24 +753,19 @@
                         <div class="card-rank">#${i + 1}</div>
                         <div class="card-score">${score}</div>
                     </div>
-
                     <div class="card-body">
                         <div class="card-title">${anime.title_english || 'Unknown Title'}</div>
-
                         <div class="card-meta">
-                            ${anime.type  ? `<span class="tag pink">${anime.type}</span>` : ''}
-                            ${source      ? `<span class="tag">${source}</span>` : ''}
-                            ${rating      ? `<span class="tag yellow">${rating}</span>` : ''}
-                            ${status      ? `<span class="tag cyan">${status}</span>` : ''}
+                            ${anime.type ? `<span class="tag pink">${anime.type}</span>`    : ''}
+                            ${source     ? `<span class="tag">${source}</span>`             : ''}
+                            ${rating     ? `<span class="tag yellow">${rating}</span>`      : ''}
+                            ${status     ? `<span class="tag cyan">${status}</span>`        : ''}
                         </div>
-
                         ${genres.length ? `
                         <div class="genres-row">
                             ${genres.map(g => `<span class="genre-chip">${g}</span>`).join('')}
                         </div>` : ''}
-
                         <p class="card-synopsis">${synopsis}</p>
-
                         <div class="card-footer">
                             <span>🎬 ${studios}</span>
                             <span>👥 ${members}</span>
@@ -712,26 +776,21 @@
             }).join('')
         }
 
-        async function myFunction(id){
-            // alert(`Div clicked! ${id}`)
-            try{
-                const response = await fetch(
-                    `${BASE_URL}/check_status`,
-                    {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({'mal_id': id})
-                    }
-                )
+        async function myFunction(id) {
+            try {
+                const response = await fetch(`${BASE_URL}/check_status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mal_id: id })
+                })
                 const result = await response.json()
-                if(response.ok){
+                if (response.ok) {
                     sessionStorage.setItem('mal_id', id)
-                    console.log(result.message || 'Success')
                     window.location.href = 'recommendation-page.html'
-                } else{
+                } else {
                     alert(result.detail || 'Failed to fetch data')
                 }
-            } catch(error){
+            } catch (error) {
                 alert('Could not connect to server')
             }
         }
@@ -744,10 +803,10 @@
                 </div>`
         }
 
-        // ── Search ───────────────────────────────────
-        const searchInput   = document.getElementById('search-input')
-        const suggestions   = document.getElementById('suggestions')
-        let debounceTimer   = null
+        /* ── Search ────────────────────────────────── */
+        const searchInput = document.getElementById('search-input')
+        const suggestions = document.getElementById('suggestions')
+        let debounceTimer = null
 
         searchInput.addEventListener('input', () => {
             const query = searchInput.value.trim()
@@ -786,11 +845,12 @@
             }
         }
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.search-wrap')) suggestions.style.display = 'none'
         })
 
+        /* ── Init ──────────────────────────────────── */
+        loadGenres()
         loadAnime()
     </script>
 </body>
